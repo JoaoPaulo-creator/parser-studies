@@ -9,6 +9,9 @@ type TokenKind int
 
 const (
 	EOF TokenKind = iota
+	NULL
+	TRUE
+	FALSE
 	NUMBER
 	STRING
 	IDENTIFIER
@@ -67,7 +70,31 @@ const (
 	EXPORT
 	TYPEOF
 	IN
+
+	NUM_TOKENS
 )
+
+// reserved lookup
+var reserved_lu map[string]TokenKind = map[string]TokenKind{
+	"true":    TRUE,
+	"false":   FALSE,
+	"null":    NULL,
+	"let":     LET,
+	"const":   CONST,
+	"class":   CLASS,
+	"new":     NEW,
+	"import":  IMPORT,
+	"from":    FROM,
+	"fn":      FN,
+	"if":      IF,
+	"else":    ELSE,
+	"foreach": FOREACH,
+	"while":   WHILE,
+	"for":     FOR,
+	"export":  EXPORT,
+	"typeof":  TYPEOF,
+	"in":      IN,
+}
 
 type Token struct {
 	Kind  TokenKind
@@ -76,13 +103,6 @@ type Token struct {
 
 func (token Token) isOneOfMany(expectedTokens ...TokenKind) bool {
 	return slices.Contains(expectedTokens, token.Kind)
-	// for _, expected := range expectedTokens {
-	// 	if expected == token.Kind {
-	// 		return true
-	// 	}
-	// }
-
-	// return false
 }
 
 func (token Token) Debug() {
