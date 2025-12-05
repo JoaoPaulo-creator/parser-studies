@@ -2,17 +2,19 @@ package main
 
 import (
 	"custom_parser/src/lexer"
+	"custom_parser/src/parser"
+
 	// "fmt"
 	"os"
+
+	"github.com/sanity-io/litter"
 )
 
 func main() {
-	bytes, _ := os.ReadFile("./examples/01.lang")
+	bytes, _ := os.ReadFile("./examples/02.lang")
 	source := string(bytes)
 
 	tokens := lexer.Tokenize(source)
-	for _, token := range tokens {
-		token.Debug()
-	}
-	// fmt.Println(source)
+	ast := parser.Parse(tokens)
+	litter.Dump(ast)
 }
