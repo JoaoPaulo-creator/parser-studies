@@ -1,0 +1,6 @@
+let foo = 45.5;
+let bar = foo * 10;
+const isGreater = foo > 10;
+
+// add support for types
+let number: []numbers;
