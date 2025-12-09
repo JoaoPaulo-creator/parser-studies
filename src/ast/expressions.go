@@ -35,3 +35,22 @@ type BinaryExpr struct {
 }
 
 func (n BinaryExpr) expr() {}
+
+type PrefixExpr struct {
+	Operator  lexer.Token
+	RightExpr Expr
+}
+
+func (n PrefixExpr) expr() {}
+
+// examples:
+// a = a + 5;
+// a += 5;
+// foo.bar += 5;
+type AssignmentExpr struct {
+	Assignee Expr
+	Operator lexer.Token
+	Value    Expr
+}
+
+func (n AssignmentExpr) expr() {}
