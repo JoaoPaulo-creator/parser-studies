@@ -36,13 +36,6 @@ type BinaryExpr struct {
 
 func (n BinaryExpr) expr() {}
 
-type PrefixExpr struct {
-	Operator  lexer.Token
-	RightExpr Expr
-}
-
-func (n PrefixExpr) expr() {}
-
 // examples:
 // a = a + 5;
 // a += 5;
@@ -54,3 +47,58 @@ type AssignmentExpr struct {
 }
 
 func (n AssignmentExpr) expr() {}
+
+type PrefixExpr struct {
+	Operator lexer.Token
+	Right    Expr
+}
+
+func (n PrefixExpr) expr() {}
+
+type MemberExpr struct {
+	Member   Expr
+	Property string
+}
+
+func (n MemberExpr) expr() {}
+
+type CallExpr struct {
+	Method    Expr
+	Arguments []Expr
+}
+
+func (n CallExpr) expr() {}
+
+type ComputedExpr struct {
+	Member   Expr
+	Property Expr
+}
+
+func (n ComputedExpr) expr() {}
+
+type RangeExpr struct {
+	Lower Expr
+	Upper Expr
+}
+
+func (n RangeExpr) expr() {}
+
+type FunctionExpr struct {
+	Parameters []Parameter
+	Body       []Stmt
+	ReturnType Type
+}
+
+func (n FunctionExpr) expr() {}
+
+type ArrayLiteral struct {
+	Contents []Expr
+}
+
+func (n ArrayLiteral) expr() {}
+
+type NewExpr struct {
+	Instantiation CallExpr
+}
+
+func (n NewExpr) expr() {}
