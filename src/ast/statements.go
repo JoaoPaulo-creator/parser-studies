@@ -20,3 +20,21 @@ type VarDeclStmt struct {
 }
 
 func (n VarDeclStmt) stmt() {}
+
+type StructProperty struct {
+	IsStatic bool // is property static?
+	Type     Type
+}
+
+type StructMethod struct {
+	IsStatic bool // is property static?
+	//Type     FnType
+}
+
+type StructDeclStmt struct {
+	StructName string
+	Properties map[string]StructProperty
+	Methods    map[string]StructMethod
+}
+
+func (n StructDeclStmt) stmt() {}

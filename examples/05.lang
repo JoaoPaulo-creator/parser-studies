@@ -1,0 +1,4 @@
+struct Rect {
+    width: number;
+    static heigth: number;
+}

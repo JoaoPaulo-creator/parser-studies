@@ -3,6 +3,7 @@ package parser
 import (
 	"custom_parser/src/ast"
 	"custom_parser/src/lexer"
+	"fmt"
 )
 
 func parseStmt(p *parser) ast.Stmt {
@@ -49,5 +50,51 @@ func parseVarDeclStmt(p *parser) ast.Stmt {
 		VariableName:  varName,
 		AssignedValue: assinedValue,
 		ExplicitType:  explicitType,
+	}
+}
+
+func parseStructDeclStmt(p *parser) ast.Stmt {
+	p.expect(lexer.STRUCT)
+	var properties = map[string]ast.StructProperty{}
+	var methods = map[string]ast.StructMethod{}
+	var structName = p.expect(lexer.IDENTIFIER).Value
+
+	p.expect(lexer.OPEN_CURLY)
+	for p.hasTokens() && p.currentTokenKind() != lexer.CLOSE_CURLY {
+		var isStatic bool
+		var propertyName string
+
+		if p.currentTokenKind() == lexer.STATIC {
+			isStatic = true
+			p.expect(lexer.STATIC)
+		}
+
+		if p.currentTokenKind() == lexer.IDENTIFIER {
+			propertyName = p.expect(lexer.IDENTIFIER).Value
+			p.expectError(lexer.COLON, "Expected to find colon following property name inside struct declaration")
+			structType := parseType(p, default_bp)
+			p.expect(lexer.SEMI_COLON)
+
+			_, exists := properties[propertyName]
+			if exists {
+				panic(fmt.Sprintf("Property %s has already been defined inside struct declaration", propertyName))
+			}
+
+			properties[propertyName] = ast.StructProperty{
+				IsStatic: isStatic,
+				Type:     structType,
+			}
+
+			continue
+		}
+
+		panic("cannot currently handle methods inside struct declaration")
+	}
+
+	p.expect(lexer.CLOSE_CURLY)
+	return ast.StructDeclStmt{
+		StructName: structName,
+		Properties: properties,
+		Methods:    methods,
 	}
 }

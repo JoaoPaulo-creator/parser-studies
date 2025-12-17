@@ -13,7 +13,7 @@ func parseExpr(p *parser, bp bindinPower) ast.Expr {
 	nudFn, exists := nudLu[tokenKind]
 
 	if !exists {
-		panic(fmt.Sprintf("NUD HANDLER EXPTED FOR TOKEN %s\n", lexer.TokenKindString(tokenKind)))
+		panic(fmt.Sprintf("NUD HANDLER EXPECTED FOR TOKEN %s\n", lexer.TokenKindString(tokenKind)))
 	}
 
 	// while we have a led and the current bp is less than bp of current token
@@ -24,7 +24,7 @@ func parseExpr(p *parser, bp bindinPower) ast.Expr {
 		ledFn, exists := ledLu[tokenKind]
 
 		if !exists {
-			panic(fmt.Sprintf("LED HANDLER EXPTED FOR TOKEN %s\n", lexer.TokenKindString(tokenKind)))
+			panic(fmt.Sprintf("LED HANDLER EXPECTED FOR TOKEN %s\n", lexer.TokenKindString(tokenKind)))
 		}
 
 		left = ledFn(p, left, bpLu[p.currentTokenKind()])
