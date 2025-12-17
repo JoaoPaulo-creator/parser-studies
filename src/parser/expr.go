@@ -2,6 +2,7 @@ package parser
 
 import (
 	"custom_parser/src/ast"
+	"custom_parser/src/helpers"
 	"custom_parser/src/lexer"
 	"fmt"
 	"strconv"
@@ -89,5 +90,50 @@ func parseAssignmentExpr(p *parser, left ast.Expr, bp bindinPower) ast.Expr {
 		Operator: operatorToken,
 		Value:    rhs,
 		Assignee: left,
+	}
+}
+
+func parseStructInstantiationExpr(p *parser, left ast.Expr, bp bindinPower) ast.Expr {
+	var structName = helpers.ExpectType[ast.SymbolExpr](left).Value
+	var properties = map[string]ast.Expr{}
+
+	p.expect(lexer.OPEN_CURLY)
+	for p.hasTokens() && p.currentTokenKind() != lexer.CLOSE_CURLY {
+		propertyName := p.expect(lexer.IDENTIFIER).Value
+		p.expect(lexer.COLON)
+		expr := parseExpr(p, logical)
+
+		properties[propertyName] = expr
+		if p.currentTokenKind() != lexer.CLOSE_CURLY {
+			p.expect(lexer.COMMA)
+		}
+	}
+
+	p.expect(lexer.CLOSE_CURLY)
+	return ast.StructInstantiationExpr{
+		StructName: structName,
+		Properties: properties,
+	}
+}
+
+func parseArrayInstantiationExpr(p *parser) ast.Expr {
+	var underlyingType ast.Type
+	var contents = []ast.Expr{}
+	p.expect(lexer.OPEN_BRACKET)
+	p.expect(lexer.CLOSE_BRACKET)
+
+	underlyingType = parseType(p, default_bp)
+	p.expect(lexer.OPEN_CURLY)
+	for p.hasTokens() && p.currentTokenKind() != lexer.CLOSE_CURLY {
+		contents = append(contents, parseExpr(p, logical))
+		if p.currentTokenKind() != lexer.CLOSE_CURLY {
+			p.expect(lexer.COMMA)
+		}
+	}
+
+	p.expect(lexer.CLOSE_CURLY)
+	return ast.ArrayInstantiationExpr{
+		Underlying: underlyingType,
+		Contents:   contents,
 	}
 }

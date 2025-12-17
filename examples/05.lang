@@ -2,3 +2,10 @@ struct Rect {
     width: number;
     static heigth: number;
 }
+
+const square = Rect{
+    width: 10,
+    heigth: 10
+};
+
+const numbers = []number{1, 2};

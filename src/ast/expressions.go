@@ -54,3 +54,17 @@ type AssignmentExpr struct {
 }
 
 func (n AssignmentExpr) expr() {}
+
+type StructInstantiationExpr struct {
+	StructName string
+	Properties map[string]Expr
+}
+
+func (n StructInstantiationExpr) expr() {}
+
+type ArrayInstantiationExpr struct {
+	Underlying Type
+	Contents   []Expr
+}
+
+func (n ArrayInstantiationExpr) expr() {}
