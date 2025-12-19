@@ -49,6 +49,7 @@ const (
 	MINUS_EQUALS
 
 	PLUS
+	MINUS
 	DASH
 	SLASH
 	STAR
@@ -187,6 +188,8 @@ func TokenKindString(kind TokenKind) string {
 		return "minus_equals"
 	case PLUS:
 		return "plus"
+	case MINUS:
+		return "minus"
 	case DASH:
 		return "dash"
 	case SLASH:
@@ -229,5 +232,12 @@ func TokenKindString(kind TokenKind) string {
 		return "static"
 	default:
 		return fmt.Sprintf("unknown(%d)", kind)
+	}
+}
+
+func newUniqueToken(kind TokenKind, value string) Token {
+	return Token{
+		Kind:  kind,
+		Value: value,
 	}
 }
