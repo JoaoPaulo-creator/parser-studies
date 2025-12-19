@@ -38,3 +38,10 @@ type StructDeclStmt struct {
 }
 
 func (n StructDeclStmt) stmt() {}
+
+type ClassDeclarationStmt struct {
+	Name string
+	Body []Stmt
+}
+
+func (n ClassDeclarationStmt) stmt() {}

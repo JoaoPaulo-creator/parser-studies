@@ -53,6 +53,30 @@ func parseVarDeclStmt(p *parser) ast.Stmt {
 	}
 }
 
+func parseBlockStmt(p *parser) ast.Stmt {
+	p.expect(lexer.OPEN_CURLY)
+	body := []ast.Stmt{}
+	for p.hasTokens() && p.currentTokenKind() != lexer.CLOSE_CURLY {
+		body = append(body, parseStmt(p))
+	}
+
+	p.expect(lexer.CLOSE_CURLY)
+	return ast.BlockStmt{
+		Body: body,
+	}
+}
+
+func parseClassDeclStmt(p *parser) ast.Stmt {
+	p.advance()
+	className := p.expect(lexer.IDENTIFIER).Value
+	classBody := parseBlockStmt(p)
+
+	return ast.ClassDeclarationStmt{
+		Name: className,
+		Body: ast.ExpectStmt[ast.BlockStmt](classBody).Body,
+	}
+}
+
 func parseStructDeclStmt(p *parser) ast.Stmt {
 	p.expect(lexer.STRUCT)
 	var properties = map[string]ast.StructProperty{}
