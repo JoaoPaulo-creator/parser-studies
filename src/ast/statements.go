@@ -45,3 +45,17 @@ type ClassDeclarationStmt struct {
 }
 
 func (n ClassDeclarationStmt) stmt() {}
+
+type Parameter struct {
+	Name string
+	Type Type
+}
+
+type FunctionDeclStmt struct {
+	Parameters []Parameter
+	Name       string
+	Body       []Stmt
+	ReturnType Type
+}
+
+func (n FunctionDeclStmt) stmt() {}

@@ -106,12 +106,12 @@ type Token struct {
 	Value string
 }
 
-func (token Token) isOneOfMany(expectedTokens ...TokenKind) bool {
+func (token Token) IsOneOfMany(expectedTokens ...TokenKind) bool {
 	return slices.Contains(expectedTokens, token.Kind)
 }
 
 func (token Token) Debug() {
-	if token.isOneOfMany(IDENTIFIER, NUMBER, STRING) {
+	if token.IsOneOfMany(IDENTIFIER, NUMBER, STRING) {
 		fmt.Printf("%s (%s)\n", TokenKindString(token.Kind), token.Value)
 	} else {
 		fmt.Printf("%s ()\n", TokenKindString(token.Kind))

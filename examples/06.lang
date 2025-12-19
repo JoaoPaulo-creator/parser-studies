@@ -1,4 +1,7 @@
 class Test{
     let t: string;
     const foo: string = "teste";
+
+    fn foo() {}
+    fn bar(a: number): number {}
 }

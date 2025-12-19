@@ -77,6 +77,19 @@ func parseClassDeclStmt(p *parser) ast.Stmt {
 	}
 }
 
+func parseFnDeclStmt(p *parser) ast.Stmt {
+	p.advance()
+	fnName := p.expect(lexer.IDENTIFIER).Value
+	functionParameters, returnType, fnBody := parseFnParamsAndBody(p)
+
+	return ast.FunctionDeclStmt{
+		Parameters: functionParameters,
+		ReturnType: returnType,
+		Body:       fnBody,
+		Name:       fnName,
+	}
+}
+
 func parseStructDeclStmt(p *parser) ast.Stmt {
 	p.expect(lexer.STRUCT)
 	var properties = map[string]ast.StructProperty{}
@@ -121,4 +134,34 @@ func parseStructDeclStmt(p *parser) ast.Stmt {
 		Properties: properties,
 		Methods:    methods,
 	}
+}
+
+func parseFnParamsAndBody(p *parser) ([]ast.Parameter, ast.Type, []ast.Stmt) {
+	functionParams := make([]ast.Parameter, 0)
+	p.expect(lexer.OPEN_PAREN)
+	for p.hasTokens() && p.currentTokenKind() != lexer.CLOSE_PAREN {
+		paramName := p.expect(lexer.IDENTIFIER).Value
+		p.expect(lexer.COLON)
+		paramType := parseType(p, default_bp)
+
+		functionParams = append(functionParams, ast.Parameter{
+			Name: paramName,
+			Type: paramType,
+		})
+
+		if !p.currentToken().IsOneOfMany(lexer.CLOSE_PAREN, lexer.EOF) {
+			p.expect(lexer.COMMA)
+		}
+	}
+
+	p.expect(lexer.CLOSE_PAREN)
+	var returnType ast.Type
+	if p.currentTokenKind() == lexer.COLON {
+		p.advance()
+		returnType = parseType(p, default_bp)
+	}
+
+	functionBody := ast.ExpectStmt[ast.BlockStmt](parseBlockStmt(p)).Body
+
+	return functionParams, returnType, functionBody
 }

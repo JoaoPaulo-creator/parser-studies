@@ -90,9 +90,13 @@ func createTokenLookups() {
 	led(lexer.OPEN_CURLY, call, parseStructInstantiationExpr)
 	nud(lexer.OPEN_BRACKET, parseArrayInstantiationExpr)
 
+	// Grouping Expr
+	// nud(lexer.FN, default_bp, parseFnExpr)
+
 	// Statements
 	stmt(lexer.CONST, parseVarDeclStmt)
 	stmt(lexer.LET, parseVarDeclStmt)
 	stmt(lexer.STRUCT, parseStructDeclStmt)
+	stmt(lexer.FN, parseFnDeclStmt)
 	stmt(lexer.CLASS, parseClassDeclStmt)
 }
