@@ -165,3 +165,67 @@ func parseFnParamsAndBody(p *parser) ([]ast.Parameter, ast.Type, []ast.Stmt) {
 
 	return functionParams, returnType, functionBody
 }
+
+func parseIfStmt(p *parser) ast.Stmt {
+	p.advance()
+	condition := parseExpr(p, assignment)
+	consequent := parseBlockStmt(p)
+
+	var alternate ast.Stmt
+	if p.currentTokenKind() == lexer.ELSE {
+		p.advance()
+		if p.currentTokenKind() == lexer.IF {
+			alternate = parseIfStmt(p)
+		} else {
+			alternate = parseBlockStmt(p)
+		}
+	}
+
+	return ast.IfStmt{
+		Condition:  condition,
+		Consequent: consequent,
+		Alternate:  alternate,
+	}
+}
+
+func parseImportStmt(p *parser) ast.Stmt {
+	p.advance()
+	var importFrom string
+	importName := p.expect(lexer.IDENTIFIER).Value
+
+	if p.currentTokenKind() == lexer.FROM {
+		p.advance()
+		importFrom = p.expect(lexer.STRING).Value
+	} else {
+		importFrom = importName
+	}
+
+	p.expect(lexer.SEMI_COLON)
+	return ast.ImportStmt{
+		Name: importFrom,
+		From: importFrom,
+	}
+}
+
+func parseForEarchStmt(p *parser) ast.Stmt {
+	p.advance()
+	valueName := p.expect(lexer.IDENTIFIER).Value
+
+	var index bool
+	if p.currentTokenKind() == lexer.COMMA {
+		p.expect(lexer.COMMA)
+		p.expect(lexer.IDENTIFIER)
+		index = true
+	}
+
+	p.expect(lexer.IN)
+	iterable := parseExpr(p, default_bp)
+	body := ast.ExpectStmt[ast.BlockStmt](parseBlockStmt(p)).Body
+
+	return ast.ForeachStmt{
+		Value:    valueName,
+		Index:    index,
+		Iterable: iterable,
+		Body:     body,
+	}
+}

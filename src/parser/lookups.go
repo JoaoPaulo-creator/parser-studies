@@ -94,9 +94,13 @@ func createTokenLookups() {
 	// nud(lexer.FN, default_bp, parseFnExpr)
 
 	// Statements
-	stmt(lexer.CONST, parseVarDeclStmt)
+	stmt(lexer.OPEN_CURLY, parseBlockStmt)
 	stmt(lexer.LET, parseVarDeclStmt)
-	stmt(lexer.STRUCT, parseStructDeclStmt)
+	stmt(lexer.CONST, parseVarDeclStmt)
 	stmt(lexer.FN, parseFnDeclStmt)
+	stmt(lexer.IF, parseIfStmt)
+	stmt(lexer.IMPORT, parseImportStmt)
+	stmt(lexer.FOREACH, parseForEarchStmt)
 	stmt(lexer.CLASS, parseClassDeclStmt)
+	stmt(lexer.STRUCT, parseStructDeclStmt)
 }

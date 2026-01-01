@@ -1,7 +1,27 @@
+import random;
+import math;
+import myLib from "../";
+
 class Test{
     let t: string;
     const foo: string = "teste";
-
     fn foo() {}
     fn bar(a: number): number {}
+}
+
+let arrayNumer = []number{1, 2, 3};
+
+foreach value, index in arrayNumber {
+    "";
+}
+
+let a = 2;
+let b = 2;
+let c = a + b;
+let result = 4;
+
+if c == result {
+    "";
+} else {
+    "";
 }
