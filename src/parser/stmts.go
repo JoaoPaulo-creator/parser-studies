@@ -20,6 +20,28 @@ func parseStmt(p *parser) ast.Stmt {
 	}
 }
 
+func parseExpressionStmt(p *parser) ast.ExpressionStmt {
+	expression := parseExpr(p, default_bp)
+	p.expect(lexer.SEMI_COLON)
+	return ast.ExpressionStmt{
+		Expression: expression,
+	}
+}
+
+func parseBlockStmt(p *parser) ast.Stmt {
+	p.expect(lexer.OPEN_CURLY)
+	body := []ast.Stmt{}
+
+	for p.hasTokens() && p.currentTokenKind() != lexer.CLOSE_CURLY {
+		body = append(body, parseStmt(p))
+	}
+
+	p.expect(lexer.CLOSE_CURLY)
+	return ast.BlockStmt{
+		Body: body,
+	}
+}
+
 func parseVarDeclStmt(p *parser) ast.Stmt {
 	var explicitType ast.Type
 	var assinedValue ast.Expr

@@ -1,9 +1,6 @@
 package lexer
 
-import (
-	"fmt"
-	"slices"
-)
+import "fmt"
 
 type TokenKind int
 
@@ -16,6 +13,7 @@ const (
 	STRING
 	IDENTIFIER
 
+	// Grouping & Braces
 	OPEN_BRACKET
 	CLOSE_BRACKET
 	OPEN_CURLY
@@ -23,19 +21,23 @@ const (
 	OPEN_PAREN
 	CLOSE_PAREN
 
+	// Equivilance
 	ASSIGNMENT
 	EQUALS
-	NOT
 	NOT_EQUALS
+	NOT
 
+	// Conditional
 	LESS
 	LESS_EQUALS
 	GREATER
 	GREATER_EQUALS
 
+	// Logical
 	OR
 	AND
 
+	// Symbols
 	DOT
 	DOT_DOT
 	SEMI_COLON
@@ -43,11 +45,14 @@ const (
 	QUESTION
 	COMMA
 
+	// Shorthand
 	PLUS_PLUS
 	MINUS_MINUS
 	PLUS_EQUALS
 	MINUS_EQUALS
+	NULLISH_ASSIGNMENT // ??=
 
+	//Maths
 	PLUS
 	MINUS
 	DASH
@@ -74,10 +79,10 @@ const (
 	STRUCT
 	STATIC
 
+	// Misc
 	NUM_TOKENS
 )
 
-// reserved lookup
 var reserved_lu map[string]TokenKind = map[string]TokenKind{
 	"true":    TRUE,
 	"false":   FALSE,
@@ -114,13 +119,7 @@ func (token Token) Debug() {
 	if token.IsOneOfMany(IDENTIFIER, NUMBER, STRING) {
 		fmt.Printf("%s (%s)\n", TokenKindString(token.Kind), token.Value)
 	} else {
-		fmt.Printf("%s ()\n", TokenKindString(token.Kind))
-	}
-}
-
-func NewToken(kind TokenKind, value string) Token {
-	return Token{
-		kind, value,
+		fmt.Printf("%s()\n", TokenKindString(token.Kind))
 	}
 }
 
@@ -128,10 +127,16 @@ func TokenKindString(kind TokenKind) string {
 	switch kind {
 	case EOF:
 		return "eof"
+	case NULL:
+		return "null"
 	case NUMBER:
 		return "number"
 	case STRING:
 		return "string"
+	case TRUE:
+		return "true"
+	case FALSE:
+		return "false"
 	case IDENTIFIER:
 		return "identifier"
 	case OPEN_BRACKET:
@@ -186,6 +191,8 @@ func TokenKindString(kind TokenKind) string {
 		return "plus_equals"
 	case MINUS_EQUALS:
 		return "minus_equals"
+	case NULLISH_ASSIGNMENT:
+		return "nullish_assignment"
 	case PLUS:
 		return "plus"
 	case MINUS:

@@ -34,6 +34,47 @@ func parseExpr(p *parser, bp bindinPower) ast.Expr {
 	return left
 }
 
+func parsePrefixExpr(p *parser) ast.Expr {
+	operatorToken := p.advance()
+	expr := parseExpr(p, unary)
+
+	return ast.PrefixExpr{
+		Operator: operatorToken,
+		Right:    expr,
+	}
+}
+
+func parseAssignmentExpr(p *parser, left ast.Expr, bp bindinPower) ast.Expr {
+	operatorToken := p.advance()
+	rhs := parseExpr(p, bp)
+
+	return ast.AssignmentExpr{
+		Operator: operatorToken,
+		Value:    rhs,
+		Assignee: left,
+	}
+}
+
+func parseRangeExpr(p *parser, left ast.Expr, bp bindinPower) ast.Expr {
+	p.advance()
+
+	return ast.RangeExpr{
+		Lower: left,
+		Upper: parseExpr(p, bp),
+	}
+}
+
+func parseBinaryExpr(p *parser, left ast.Expr, bp bindinPower) ast.Expr {
+	operatorToken := p.advance()
+	right := parseExpr(p, bp)
+
+	return ast.BinaryExpr{
+		Left:     left,
+		Operator: operatorToken,
+		Right:    right,
+	}
+}
+
 func parsePrimaryExpr(p *parser) ast.Expr {
 	switch p.currentTokenKind() {
 	case lexer.NUMBER:
@@ -54,24 +95,38 @@ func parsePrimaryExpr(p *parser) ast.Expr {
 	}
 }
 
-func parseBinaryExpr(p *parser, left ast.Expr, bp bindinPower) ast.Expr {
-	operatorToken := p.advance()
-	right := parseExpr(p, bp)
+func parseMemberExpr(p *parser, left ast.Expr, bp bindinPower) ast.Expr {
+	isComputed := p.advance().Kind == lexer.OPEN_BRACKET
+	if isComputed {
+		rhs := parseExpr(p, bp)
+		p.expect(lexer.CLOSE_BRACKET)
+		return ast.ComputedExpr{
+			Member:   left,
+			Property: rhs,
+		}
+	}
 
-	return ast.BinaryExpr{
-		Left:     left,
-		Operator: operatorToken,
-		Right:    right,
+	return ast.MemberExpr{
+		Member:   left,
+		Property: p.expect(lexer.IDENTIFIER).Value,
 	}
 }
 
-func parsePrefixExpr(p *parser) ast.Expr {
-	operatorToken := p.advance()
-	rhs := parseExpr(p, default_bp)
+func parseArrayLiteralExpr(p *parser) ast.Expr {
+	p.expect(lexer.OPEN_BRACKET)
+	arrayContents := make([]ast.Expr, 0)
 
-	return ast.PrefixExpr{
-		Operator:  operatorToken,
-		RightExpr: rhs,
+	for p.hasTokens() && p.currentTokenKind() != lexer.CLOSE_BRACKET {
+		arrayContents = append(arrayContents, parseExpr(p, logical))
+
+		if !p.currentToken().IsOneOfMany(lexer.EOF, lexer.CLOSE_BRACKET) {
+			p.expect(lexer.COMMA)
+		}
+	}
+
+	p.expect(lexer.CLOSE_BRACKET)
+	return ast.ArrayLiteral{
+		Contents: arrayContents,
 	}
 }
 
@@ -82,14 +137,33 @@ func parseGroupingExpr(p *parser) ast.Expr {
 	return expr
 }
 
-func parseAssignmentExpr(p *parser, left ast.Expr, bp bindinPower) ast.Expr {
-	operatorToken := p.advance()
-	rhs := parseExpr(p, bp)
+func parseCallExpr(p *parser, left ast.Expr, bp bindinPower) ast.Expr {
+	p.advance()
+	arguments := make([]ast.Expr, 0)
 
-	return ast.AssignmentExpr{
-		Operator: operatorToken,
-		Value:    rhs,
-		Assignee: left,
+	for p.hasTokens() && p.currentTokenKind() != lexer.CLOSE_PAREN {
+		arguments = append(arguments, parseExpr(p, assignment))
+
+		if !p.currentToken().IsOneOfMany(lexer.EOF, lexer.CLOSE_PAREN) {
+			p.expect(lexer.COMMA)
+		}
+	}
+
+	p.expect(lexer.CLOSE_PAREN)
+	return ast.CallExpr{
+		Method:    left,
+		Arguments: arguments,
+	}
+}
+
+func parseFnExpr(p *parser) ast.Expr {
+	p.expect(lexer.FN)
+	functionParams, returnType, functionBody := parseFnParamsAndBody(p)
+
+	return ast.FunctionExpr{
+		Parameters: functionParams,
+		ReturnType: returnType,
+		Body:       functionBody,
 	}
 }
 

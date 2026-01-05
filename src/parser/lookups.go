@@ -80,11 +80,32 @@ func createTokenLookups() {
 	led(lexer.PERCENT, multiplicative, parseBinaryExpr)
 
 	// Literals & Symbols
-	nud(lexer.NUMBER, parsePrimaryExpr)
-	nud(lexer.STRING, parsePrimaryExpr)
-	nud(lexer.IDENTIFIER, parsePrimaryExpr)
-	nud(lexer.OPEN_PAREN, parseGroupingExpr)
-	nud(lexer.DASH, parsePrefixExpr)
+	nud(lexer.NUMBER, primary, parsePrimaryExpr)
+	nud(lexer.STRING, primary, parsePrimaryExpr)
+	nud(lexer.IDENTIFIER, primary, parsePrimaryExpr)
+
+	//Unary/Prefix
+	nud(lexer.TYPEOF, unary, parsePrimaryExpr)
+	nud(lexer.DASH, unary, parsePrefixExpr)
+	nud(lexer.NOT, unary, parsePrimaryExpr)
+	nud(lexer.OPEN_BRACKET, unary, parsePrimaryExpr)
+
+	// Member / Computed // Call
+	led(lexer.DOT, member, parseMemberExpr)
+	led(lexer.OPEN_BRACKET, member, parseMemberExpr)
+	led(lexer.OPEN_PAREN, member, parseMemberExpr)
+
+	// Grouping Expr
+	nud(lexer.OPEN_PAREN, default_bp, parseGroupingExpr)
+	nud(lexer.FN, default_bp, parseGroupingExpr)
+	nud(lexer.NEW, default_bp, func(p *parser) ast.Expr {
+		p.advance()
+		classInstantiation := parseExpr(p, default_bp)
+
+		return ast.NewExpr{
+			Instantiation: ast.ExpectExpr[ast.CallExpr](classInstantiation),
+		}
+	})
 
 	nud(lexer.TYPEOF, parsePrefixExpr)
 	nud(lexer.DASH, parsePrefixExpr)
