@@ -49,8 +49,8 @@ type AssignmentExpr struct {
 func (n AssignmentExpr) expr() {}
 
 type PrefixExpr struct {
-	Operator lexer.Token
-	Right    Expr
+	Operator  lexer.Token
+	RightExpr Expr
 }
 
 func (n PrefixExpr) expr() {}
@@ -91,14 +91,28 @@ type FunctionExpr struct {
 
 func (n FunctionExpr) expr() {}
 
+type NewExpr struct {
+	Instantiation CallExpr
+}
+
+func (n NewExpr) expr() {}
+
 type ArrayLiteral struct {
 	Contents []Expr
 }
 
 func (n ArrayLiteral) expr() {}
 
-type NewExpr struct {
-	Instantiation CallExpr
+type StructInstantiationExpr struct {
+	StructName string
+	Properties map[string]Expr
 }
 
-func (n NewExpr) expr() {}
+func (n StructInstantiationExpr) expr() {}
+
+type ArrayInstantiationExpr struct {
+	Underlying Type
+	Contents   []Expr
+}
+
+func (n ArrayInstantiationExpr) expr() {}

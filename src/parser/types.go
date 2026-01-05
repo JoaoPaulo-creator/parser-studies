@@ -10,8 +10,8 @@ type (
 	type_nudHandler func(p *parser) ast.Type
 	type_ledHandler func(p *parser, left ast.Type, bp bindinPower) ast.Type
 
-	type_ledLookup map[lexer.TokenKind]type_ledHandler
 	type_nudLookup map[lexer.TokenKind]type_nudHandler
+	type_ledLookup map[lexer.TokenKind]type_ledHandler
 	type_bpLookup  map[lexer.TokenKind]bindinPower
 )
 
@@ -27,6 +27,7 @@ func typeLed(kind lexer.TokenKind, bp bindinPower, ledFn type_ledHandler) {
 }
 
 func typeNud(kind lexer.TokenKind, nudFn type_nudHandler) {
+	type_bpLu[kind] = primary
 	type_nudLu[kind] = nudFn
 }
 
@@ -58,7 +59,7 @@ func parseType(p *parser, bp bindinPower) ast.Type {
 	nudFn, exists := type_nudLu[tokenKind]
 
 	if !exists {
-		panic(fmt.Sprintf("TYPE_NUD HANDLER EXPTED FOR TOKEN %s\n", lexer.TokenKindString(tokenKind)))
+		panic(fmt.Sprintf("TYPE_NUD HANDLER EXPECTED FOR TOKEN %s\n", lexer.TokenKindString(tokenKind)))
 	}
 
 	// while we have a led and the current bp is less than bp of current token
@@ -69,7 +70,7 @@ func parseType(p *parser, bp bindinPower) ast.Type {
 		ledFn, exists := type_ledLu[tokenKind]
 
 		if !exists {
-			panic(fmt.Sprintf("LED HANDLER EXPTED FOR TOKEN %s\n", lexer.TokenKindString(tokenKind)))
+			panic(fmt.Sprintf("LED HANDLER EXPECTED FOR TOKEN %s\n", lexer.TokenKindString(tokenKind)))
 		}
 
 		left = ledFn(p, left, type_bpLu[p.currentTokenKind()])

@@ -21,19 +21,44 @@ type VarDeclStmt struct {
 
 func (n VarDeclStmt) stmt() {}
 
+type StructProperty struct {
+	IsStatic bool // is property static?
+	Type     Type
+}
+
+type StructMethod struct {
+	IsStatic bool // is property static?
+	//Type     FnType
+}
+
+type StructDeclStmt struct {
+	StructName string
+	Properties map[string]StructProperty
+	Methods    map[string]StructMethod
+}
+
+func (n StructDeclStmt) stmt() {}
+
+type ClassDeclarationStmt struct {
+	Name string
+	Body []Stmt
+}
+
+func (n ClassDeclarationStmt) stmt() {}
+
 type Parameter struct {
 	Name string
 	Type Type
 }
 
-type FunctionDeclarationStmt struct {
+type FunctionDeclStmt struct {
 	Parameters []Parameter
 	Name       string
 	Body       []Stmt
 	ReturnType Type
 }
 
-func (n FunctionDeclarationStmt) stmt() {}
+func (n FunctionDeclStmt) stmt() {}
 
 type IfStmt struct {
 	Condition  Expr
@@ -58,10 +83,3 @@ type ForeachStmt struct {
 }
 
 func (n ForeachStmt) stmt() {}
-
-type ClassDeclarationStmt struct {
-	Name string
-	Body []Stmt
-}
-
-func (n ClassDeclarationStmt) stmt() {}

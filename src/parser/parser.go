@@ -20,8 +20,8 @@ func createParser(tokens []lexer.Token) *parser {
 }
 
 func Parse(tokens []lexer.Token) ast.BlockStmt {
-	body := make([]ast.Stmt, 0)
 	p := createParser(tokens)
+	body := make([]ast.Stmt, 0)
 
 	for p.hasTokens() {
 		body = append(body, parseStmt(p))

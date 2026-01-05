@@ -54,6 +54,7 @@ const (
 
 	//Maths
 	PLUS
+	MINUS
 	DASH
 	SLASH
 	STAR
@@ -75,6 +76,8 @@ const (
 	EXPORT
 	TYPEOF
 	IN
+	STRUCT
+	STATIC
 
 	// Misc
 	NUM_TOKENS
@@ -99,6 +102,8 @@ var reserved_lu map[string]TokenKind = map[string]TokenKind{
 	"export":  EXPORT,
 	"typeof":  TYPEOF,
 	"in":      IN,
+	"struct":  STRUCT,
+	"static":  STATIC,
 }
 
 type Token struct {
@@ -106,19 +111,13 @@ type Token struct {
 	Value string
 }
 
-func (tk Token) IsOneOfMany(expectedTokens ...TokenKind) bool {
-	for _, expected := range expectedTokens {
-		if expected == tk.Kind {
-			return true
-		}
-	}
-
-	return false
+func (token Token) IsOneOfMany(expectedTokens ...TokenKind) bool {
+	return slices.Contains(expectedTokens, token.Kind)
 }
 
 func (token Token) Debug() {
-	if token.Kind == IDENTIFIER || token.Kind == NUMBER || token.Kind == STRING {
-		fmt.Printf("%s(%s)\n", TokenKindString(token.Kind), token.Value)
+	if token.IsOneOfMany(IDENTIFIER, NUMBER, STRING) {
+		fmt.Printf("%s (%s)\n", TokenKindString(token.Kind), token.Value)
 	} else {
 		fmt.Printf("%s()\n", TokenKindString(token.Kind))
 	}
@@ -196,6 +195,8 @@ func TokenKindString(kind TokenKind) string {
 		return "nullish_assignment"
 	case PLUS:
 		return "plus"
+	case MINUS:
+		return "minus"
 	case DASH:
 		return "dash"
 	case SLASH:
@@ -232,6 +233,10 @@ func TokenKindString(kind TokenKind) string {
 		return "export"
 	case IN:
 		return "in"
+	case STRUCT:
+		return "struct"
+	case STATIC:
+		return "static"
 	default:
 		return fmt.Sprintf("unknown(%d)", kind)
 	}
@@ -239,6 +244,7 @@ func TokenKindString(kind TokenKind) string {
 
 func newUniqueToken(kind TokenKind, value string) Token {
 	return Token{
-		kind, value,
+		Kind:  kind,
+		Value: value,
 	}
 }

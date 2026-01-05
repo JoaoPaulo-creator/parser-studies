@@ -44,8 +44,8 @@ func led(kind lexer.TokenKind, bp bindinPower, ledFn ledHandler) {
 	ledLu[kind] = ledFn
 }
 
-func nud(kind lexer.TokenKind, bp bindinPower, nudFn nudHandler) {
-	bpLu[kind] = default_bp
+func nud(kind lexer.TokenKind, nudFn nudHandler) {
+	bpLu[kind] = primary
 	nudLu[kind] = nudFn
 }
 
@@ -107,13 +107,35 @@ func createTokenLookups() {
 		}
 	})
 
+	nud(lexer.TYPEOF, parsePrefixExpr)
+	nud(lexer.DASH, parsePrefixExpr)
+	nud(lexer.NOT, parsePrefixExpr)
+	nud(lexer.OPEN_BRACKET, parseArrayInstantiationExpr)
+
+	// Call/Member/Arrays expressions
+	led(lexer.DOT, member, parseMemberExpr)
+	led(lexer.OPEN_BRACKET, member, parseMemberExpr)
+	led(lexer.OPEN_PAREN, call, parseCallExpr)
+
+	// Grouping Expr
+	nud(lexer.OPEN_PAREN, parseGroupingExpr)
+	nud(lexer.FN, parseFnExpr)
+	nud(lexer.NEW, func(p *parser) ast.Expr {
+		p.advance()
+		classInstation := parseExpr(p, default_bp)
+		return ast.NewExpr{
+			Instantiation: ast.ExpectExpr[ast.CallExpr](classInstation),
+		}
+	})
+
 	// Statements
-	stmt(lexer.OPEN_BRACKET, parseBlockStmt)
+	stmt(lexer.OPEN_CURLY, parseBlockStmt)
 	stmt(lexer.LET, parseVarDeclStmt)
 	stmt(lexer.CONST, parseVarDeclStmt)
-	stmt(lexer.FN, parseFnDeclaration)
+	stmt(lexer.FN, parseFnDeclStmt)
 	stmt(lexer.IF, parseIfStmt)
 	stmt(lexer.IMPORT, parseImportStmt)
-	stmt(lexer.FOR, parseForeachStmt)
-	stmt(lexer.CLASS, parseClassDeclarationStmt)
+	stmt(lexer.FOREACH, parseForEarchStmt)
+	stmt(lexer.CLASS, parseClassDeclStmt)
+	stmt(lexer.STRUCT, parseStructDeclStmt)
 }

@@ -1,165 +1,351 @@
+// lexer.go
 package lexer
 
 import (
 	"fmt"
-	"regexp"
+	"unicode"
 )
 
-type regexPattern struct {
-	regex   *regexp.Regexp
-	handler regexHandler
-}
-
 type lexer struct {
-	patterns []regexPattern
-	Tokens   []Token
-	source   string
-	pos      int
-	line     int
+	source string
+	pos    int
+	line   int
+	Tokens []Token
 }
 
 func Tokenize(source string) []Token {
-	lex := createLexer(source)
+	lex := &lexer{
+		source: source,
+		pos:    0,
+		line:   1,
+		Tokens: make([]Token, 0),
+	}
 
-	for !lex.at_eof() {
-		matched := false
-
-		for _, pattern := range lex.patterns {
-			loc := pattern.regex.FindStringIndex(lex.remainder())
-			if loc != nil && loc[0] == 0 {
-				pattern.handler(lex, pattern.regex)
-				matched = true
-				break // Exit the loop after the first match
-			}
-		}
-
-		if !matched {
-			panic(fmt.Sprintf("lexer error: unrecognized token near '%v'", lex.remainder()))
-		}
+	for !lex.atEOF() {
+		lex.scanToken()
 	}
 
 	lex.push(newUniqueToken(EOF, "EOF"))
 	return lex.Tokens
 }
 
-func (lex *lexer) advanceN(n int) {
-	lex.pos += n
+func (lex *lexer) scanToken() {
+	ch := lex.peek()
+
+	// Skip whitespace
+	if unicode.IsSpace(rune(ch)) {
+		lex.skipWhitespace()
+		return
+	}
+
+	// Comments
+	if ch == '/' && lex.peekNext() == '/' {
+		lex.skipComment()
+		return
+	}
+
+	// String literals
+	if ch == '"' {
+		lex.scanString()
+		return
+	}
+
+	// Numbers
+	if unicode.IsDigit(rune(ch)) {
+		lex.scanNumber()
+		return
+	}
+
+	// Identifiers and keywords
+	if unicode.IsLetter(rune(ch)) || ch == '_' {
+		lex.scanIdentifier()
+		return
+	}
+
+	// Multi-character operators (check these before single-char)
+	switch ch {
+	case '=':
+		if lex.peekNext() == '=' {
+			lex.advance()
+			lex.advance()
+			lex.push(newUniqueToken(EQUALS, "=="))
+			return
+		}
+		lex.advance()
+		lex.push(newUniqueToken(ASSIGNMENT, "="))
+		return
+
+	case '!':
+		if lex.peekNext() == '=' {
+			lex.advance()
+			lex.advance()
+			lex.push(newUniqueToken(NOT_EQUALS, "!="))
+			return
+		}
+		lex.advance()
+		lex.push(newUniqueToken(NOT, "!"))
+		return
+
+	case '<':
+		if lex.peekNext() == '=' {
+			lex.advance()
+			lex.advance()
+			lex.push(newUniqueToken(LESS_EQUALS, "<="))
+			return
+		}
+		lex.advance()
+		lex.push(newUniqueToken(LESS, "<"))
+		return
+
+	case '>':
+		if lex.peekNext() == '=' {
+			lex.advance()
+			lex.advance()
+			lex.push(newUniqueToken(GREATER_EQUALS, ">="))
+			return
+		}
+		lex.advance()
+		lex.push(newUniqueToken(GREATER, ">"))
+		return
+
+	case '|':
+		if lex.peekNext() == '|' {
+			lex.advance()
+			lex.advance()
+			lex.push(newUniqueToken(OR, "||"))
+			return
+		}
+
+	case '&':
+		if lex.peekNext() == '&' {
+			lex.advance()
+			lex.advance()
+			lex.push(newUniqueToken(AND, "&&"))
+			return
+		}
+
+	case '.':
+		if lex.peekNext() == '.' {
+			lex.advance()
+			lex.advance()
+			lex.push(newUniqueToken(DOT_DOT, ".."))
+			return
+		}
+		lex.advance()
+		lex.push(newUniqueToken(DOT, "."))
+		return
+
+	case '+':
+		next := lex.peekNext()
+		if next == '+' {
+			lex.advance()
+			lex.advance()
+			lex.push(newUniqueToken(PLUS_PLUS, "++"))
+			return
+		}
+		if next == '=' {
+			lex.advance()
+			lex.advance()
+			lex.push(newUniqueToken(PLUS_EQUALS, "+="))
+			return
+		}
+		lex.advance()
+		lex.push(newUniqueToken(PLUS, "+"))
+		return
+
+	case '-':
+		next := lex.peekNext()
+		if next == '-' {
+			lex.advance()
+			lex.advance()
+			lex.push(newUniqueToken(MINUS_MINUS, "--"))
+			return
+		}
+		if next == '=' {
+			lex.advance()
+			lex.advance()
+			lex.push(newUniqueToken(MINUS_EQUALS, "-="))
+			return
+		}
+		lex.advance()
+		lex.push(newUniqueToken(DASH, "-"))
+		return
+
+	// case '?':
+	// 	if lex.peekNext() == '?' && lex.peekAhead(2) == '=' {
+	// 		lex.advance()
+	// 		lex.advance()
+	// 		lex.advance()
+	// 		lex.push(newUniqueToken(NULLISH_ASSIGNMENT, "??="))
+	// 		return
+	// 	}
+	// 	lex.advance()
+	// 	lex.push(newUniqueToken(QUESTION, "?"))
+	// 	return
+
+	// Single-character tokens
+	case '[':
+		lex.advance()
+		lex.push(newUniqueToken(OPEN_BRACKET, "["))
+		return
+	case ']':
+		lex.advance()
+		lex.push(newUniqueToken(CLOSE_BRACKET, "]"))
+		return
+	case '{':
+		lex.advance()
+		lex.push(newUniqueToken(OPEN_CURLY, "{"))
+		return
+	case '}':
+		lex.advance()
+		lex.push(newUniqueToken(CLOSE_CURLY, "}"))
+		return
+	case '(':
+		lex.advance()
+		lex.push(newUniqueToken(OPEN_PAREN, "("))
+		return
+	case ')':
+		lex.advance()
+		lex.push(newUniqueToken(CLOSE_PAREN, ")"))
+		return
+	case ';':
+		lex.advance()
+		lex.push(newUniqueToken(SEMI_COLON, ";"))
+		return
+	case ':':
+		lex.advance()
+		lex.push(newUniqueToken(COLON, ":"))
+		return
+	case ',':
+		lex.advance()
+		lex.push(newUniqueToken(COMMA, ","))
+		return
+	case '/':
+		lex.advance()
+		lex.push(newUniqueToken(SLASH, "/"))
+		return
+	case '*':
+		lex.advance()
+		lex.push(newUniqueToken(STAR, "*"))
+		return
+	case '%':
+		lex.advance()
+		lex.push(newUniqueToken(PERCENT, "%"))
+		return
+	}
+
+	panic(fmt.Sprintf("lexer error: unexpected character '%c' at position %d", ch, lex.pos))
 }
 
-func (lex *lexer) at() byte {
+func (lex *lexer) scanString() {
+	start := lex.pos
+	lex.advance() // Skip opening quote
+
+	for !lex.atEOF() && lex.peek() != '"' {
+		lex.advance()
+	}
+
+	if lex.atEOF() {
+		panic("lexer error: unterminated string literal")
+	}
+
+	lex.advance() // Skip closing quote
+	value := lex.source[start:lex.pos]
+	lex.push(newUniqueToken(STRING, value))
+}
+
+func (lex *lexer) scanNumber() {
+	start := lex.pos
+
+	// Scan integer part
+	for !lex.atEOF() && unicode.IsDigit(rune(lex.peek())) {
+		lex.advance()
+	}
+
+	// Check for decimal part
+	if !lex.atEOF() && lex.peek() == '.' && unicode.IsDigit(rune(lex.peekNext())) {
+		lex.advance() // Skip '.'
+		for !lex.atEOF() && unicode.IsDigit(rune(lex.peek())) {
+			lex.advance()
+		}
+	}
+
+	value := lex.source[start:lex.pos]
+	lex.push(newUniqueToken(NUMBER, value))
+}
+
+func (lex *lexer) scanIdentifier() {
+	start := lex.pos
+
+	for !lex.atEOF() {
+		ch := lex.peek()
+		if unicode.IsLetter(rune(ch)) || unicode.IsDigit(rune(ch)) || ch == '_' {
+			lex.advance()
+		} else {
+			break
+		}
+	}
+
+	value := lex.source[start:lex.pos]
+
+	// Check if it's a reserved keyword
+	if kind, found := reserved_lu[value]; found {
+		lex.push(newUniqueToken(kind, value))
+	} else {
+		lex.push(newUniqueToken(IDENTIFIER, value))
+	}
+}
+
+func (lex *lexer) skipWhitespace() {
+	for !lex.atEOF() && unicode.IsSpace(rune(lex.peek())) {
+		if lex.peek() == '\n' {
+			lex.line++
+		}
+		lex.advance()
+	}
+}
+
+func (lex *lexer) skipComment() {
+	// Skip until end of line
+	for !lex.atEOF() && lex.peek() != '\n' {
+		lex.advance()
+	}
+	if !lex.atEOF() {
+		lex.advance() // Skip the newline
+		lex.line++
+	}
+}
+
+// Helper methods
+func (lex *lexer) peek() byte {
+	if lex.atEOF() {
+		return 0
+	}
 	return lex.source[lex.pos]
 }
 
-func (lex *lexer) advance() {
-	lex.pos += 1
+func (lex *lexer) peekNext() byte {
+	if lex.pos+1 >= len(lex.source) {
+		return 0
+	}
+	return lex.source[lex.pos+1]
 }
 
-func (lex *lexer) remainder() string {
-	return lex.source[lex.pos:]
+func (lex *lexer) peekAhead(n int) byte {
+	if lex.pos+n >= len(lex.source) {
+		return 0
+	}
+	return lex.source[lex.pos+n]
+}
+
+func (lex *lexer) advance() {
+	lex.pos++
 }
 
 func (lex *lexer) push(token Token) {
 	lex.Tokens = append(lex.Tokens, token)
 }
 
-func (lex *lexer) at_eof() bool {
+func (lex *lexer) atEOF() bool {
 	return lex.pos >= len(lex.source)
-}
-
-func createLexer(source string) *lexer {
-	return &lexer{
-		pos:    0,
-		line:   1,
-		source: source,
-		Tokens: make([]Token, 0),
-		patterns: []regexPattern{
-			{regexp.MustCompile(`\s+`), skipHandler},
-			{regexp.MustCompile(`\/\/.*`), commentHandler},
-			{regexp.MustCompile(`"[^"]*"`), stringHandler},
-			{regexp.MustCompile(`[0-9]+(\.[0-9]+)?`), numberHandler},
-			{regexp.MustCompile(`[a-zA-Z_][a-zA-Z0-9_]*`), symbolHandler},
-			{regexp.MustCompile(`\[`), defaultHandler(OPEN_BRACKET, "[")},
-			{regexp.MustCompile(`\]`), defaultHandler(CLOSE_BRACKET, "]")},
-			{regexp.MustCompile(`\{`), defaultHandler(OPEN_CURLY, "{")},
-			{regexp.MustCompile(`\}`), defaultHandler(CLOSE_CURLY, "}")},
-			{regexp.MustCompile(`\(`), defaultHandler(OPEN_PAREN, "(")},
-			{regexp.MustCompile(`\)`), defaultHandler(CLOSE_PAREN, ")")},
-			{regexp.MustCompile(`==`), defaultHandler(EQUALS, "==")},
-			{regexp.MustCompile(`!=`), defaultHandler(NOT_EQUALS, "!=")},
-			{regexp.MustCompile(`=`), defaultHandler(ASSIGNMENT, "=")},
-			{regexp.MustCompile(`!`), defaultHandler(NOT, "!")},
-			{regexp.MustCompile(`<=`), defaultHandler(LESS_EQUALS, "<=")},
-			{regexp.MustCompile(`<`), defaultHandler(LESS, "<")},
-			{regexp.MustCompile(`>=`), defaultHandler(GREATER_EQUALS, ">=")},
-			{regexp.MustCompile(`>`), defaultHandler(GREATER, ">")},
-			{regexp.MustCompile(`\|\|`), defaultHandler(OR, "||")},
-			{regexp.MustCompile(`&&`), defaultHandler(AND, "&&")},
-			{regexp.MustCompile(`\.\.`), defaultHandler(DOT_DOT, "..")},
-			{regexp.MustCompile(`\.`), defaultHandler(DOT, ".")},
-			{regexp.MustCompile(`;`), defaultHandler(SEMI_COLON, ";")},
-			{regexp.MustCompile(`:`), defaultHandler(COLON, ":")},
-			{regexp.MustCompile(`\?\?=`), defaultHandler(NULLISH_ASSIGNMENT, "??=")},
-			{regexp.MustCompile(`\?`), defaultHandler(QUESTION, "?")},
-			{regexp.MustCompile(`,`), defaultHandler(COMMA, ",")},
-			{regexp.MustCompile(`\+\+`), defaultHandler(PLUS_PLUS, "++")},
-			{regexp.MustCompile(`--`), defaultHandler(MINUS_MINUS, "--")},
-			{regexp.MustCompile(`\+=`), defaultHandler(PLUS_EQUALS, "+=")},
-			{regexp.MustCompile(`-=`), defaultHandler(MINUS_EQUALS, "-=")},
-			{regexp.MustCompile(`\+`), defaultHandler(PLUS, "+")},
-			{regexp.MustCompile(`-`), defaultHandler(DASH, "-")},
-			{regexp.MustCompile(`/`), defaultHandler(SLASH, "/")},
-			{regexp.MustCompile(`\*`), defaultHandler(STAR, "*")},
-			{regexp.MustCompile(`%`), defaultHandler(PERCENT, "%")},
-		},
-	}
-}
-
-type regexHandler func(lex *lexer, regex *regexp.Regexp)
-
-// Created a default handler which will simply create a token with the matched contents. This handler is used with most simple tokens.
-func defaultHandler(kind TokenKind, value string) regexHandler {
-	return func(lex *lexer, _ *regexp.Regexp) {
-		lex.advanceN(len(value))
-		lex.push(newUniqueToken(kind, value))
-	}
-}
-
-func stringHandler(lex *lexer, regex *regexp.Regexp) {
-	match := regex.FindStringIndex(lex.remainder())
-	stringLiteral := lex.remainder()[match[0]:match[1]]
-
-	lex.push(newUniqueToken(STRING, stringLiteral))
-	lex.advanceN(len(stringLiteral))
-}
-
-func numberHandler(lex *lexer, regex *regexp.Regexp) {
-	match := regex.FindString(lex.remainder())
-	lex.push(newUniqueToken(NUMBER, match))
-	lex.advanceN(len(match))
-}
-
-func symbolHandler(lex *lexer, regex *regexp.Regexp) {
-	match := regex.FindString(lex.remainder())
-
-	if kind, found := reserved_lu[match]; found {
-		lex.push(newUniqueToken(kind, match))
-	} else {
-		lex.push(newUniqueToken(IDENTIFIER, match))
-	}
-
-	lex.advanceN(len(match))
-}
-
-func skipHandler(lex *lexer, regex *regexp.Regexp) {
-	match := regex.FindStringIndex(lex.remainder())
-	lex.advanceN(match[1])
-}
-
-func commentHandler(lex *lexer, regex *regexp.Regexp) {
-	match := regex.FindStringIndex(lex.remainder())
-	if match != nil {
-		// Advance past the entire comment.
-		lex.advanceN(match[1])
-		lex.line++
-	}
 }
