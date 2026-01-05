@@ -39,8 +39,8 @@ func parsePrefixExpr(p *parser) ast.Expr {
 	expr := parseExpr(p, unary)
 
 	return ast.PrefixExpr{
-		Operator: operatorToken,
-		Right:    expr,
+		Operator:  operatorToken,
+		RightExpr: expr,
 	}
 }
 
@@ -52,15 +52,6 @@ func parseAssignmentExpr(p *parser, left ast.Expr, bp bindinPower) ast.Expr {
 		Operator: operatorToken,
 		Value:    rhs,
 		Assignee: left,
-	}
-}
-
-func parseRangeExpr(p *parser, left ast.Expr, bp bindinPower) ast.Expr {
-	p.advance()
-
-	return ast.RangeExpr{
-		Lower: left,
-		Upper: parseExpr(p, bp),
 	}
 }
 
@@ -95,23 +86,6 @@ func parsePrimaryExpr(p *parser) ast.Expr {
 	}
 }
 
-func parseMemberExpr(p *parser, left ast.Expr, bp bindinPower) ast.Expr {
-	isComputed := p.advance().Kind == lexer.OPEN_BRACKET
-	if isComputed {
-		rhs := parseExpr(p, bp)
-		p.expect(lexer.CLOSE_BRACKET)
-		return ast.ComputedExpr{
-			Member:   left,
-			Property: rhs,
-		}
-	}
-
-	return ast.MemberExpr{
-		Member:   left,
-		Property: p.expect(lexer.IDENTIFIER).Value,
-	}
-}
-
 func parseArrayLiteralExpr(p *parser) ast.Expr {
 	p.expect(lexer.OPEN_BRACKET)
 	arrayContents := make([]ast.Expr, 0)
@@ -135,36 +109,6 @@ func parseGroupingExpr(p *parser) ast.Expr {
 	expr := parseExpr(p, default_bp)
 	p.expect(lexer.CLOSE_PAREN)
 	return expr
-}
-
-func parseCallExpr(p *parser, left ast.Expr, bp bindinPower) ast.Expr {
-	p.advance()
-	arguments := make([]ast.Expr, 0)
-
-	for p.hasTokens() && p.currentTokenKind() != lexer.CLOSE_PAREN {
-		arguments = append(arguments, parseExpr(p, assignment))
-
-		if !p.currentToken().IsOneOfMany(lexer.EOF, lexer.CLOSE_PAREN) {
-			p.expect(lexer.COMMA)
-		}
-	}
-
-	p.expect(lexer.CLOSE_PAREN)
-	return ast.CallExpr{
-		Method:    left,
-		Arguments: arguments,
-	}
-}
-
-func parseFnExpr(p *parser) ast.Expr {
-	p.expect(lexer.FN)
-	functionParams, returnType, functionBody := parseFnParamsAndBody(p)
-
-	return ast.FunctionExpr{
-		Parameters: functionParams,
-		ReturnType: returnType,
-		Body:       functionBody,
-	}
 }
 
 func parseStructInstantiationExpr(p *parser, left ast.Expr, bp bindinPower) ast.Expr {

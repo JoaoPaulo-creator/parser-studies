@@ -28,20 +28,6 @@ func parseExpressionStmt(p *parser) ast.ExpressionStmt {
 	}
 }
 
-func parseBlockStmt(p *parser) ast.Stmt {
-	p.expect(lexer.OPEN_CURLY)
-	body := []ast.Stmt{}
-
-	for p.hasTokens() && p.currentTokenKind() != lexer.CLOSE_CURLY {
-		body = append(body, parseStmt(p))
-	}
-
-	p.expect(lexer.CLOSE_CURLY)
-	return ast.BlockStmt{
-		Body: body,
-	}
-}
-
 func parseVarDeclStmt(p *parser) ast.Stmt {
 	var explicitType ast.Type
 	var assinedValue ast.Expr
