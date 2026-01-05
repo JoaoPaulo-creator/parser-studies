@@ -117,23 +117,72 @@ func parseStructInstantiationExpr(p *parser, left ast.Expr, bp bindinPower) ast.
 }
 
 func parseArrayInstantiationExpr(p *parser) ast.Expr {
-	var underlyingType ast.Type
-	var contents = []ast.Expr{}
 	p.expect(lexer.OPEN_BRACKET)
-	p.expect(lexer.CLOSE_BRACKET)
+	contents := make([]ast.Expr, 0)
 
-	underlyingType = parseType(p, default_bp)
-	p.expect(lexer.OPEN_CURLY)
-	for p.hasTokens() && p.currentTokenKind() != lexer.CLOSE_CURLY {
+	for p.hasTokens() && p.currentTokenKind() != lexer.CLOSE_BRACKET {
 		contents = append(contents, parseExpr(p, logical))
-		if p.currentTokenKind() != lexer.CLOSE_CURLY {
+		if !p.currentToken().IsOneOfMany(lexer.EOF, lexer.CLOSE_BRACKET) {
 			p.expect(lexer.COMMA)
 		}
 	}
 
-	p.expect(lexer.CLOSE_CURLY)
-	return ast.ArrayInstantiationExpr{
-		Underlying: underlyingType,
-		Contents:   contents,
+	p.expect(lexer.CLOSE_BRACKET)
+	return ast.ArrayLiteral{
+		Contents: contents,
+	}
+}
+
+func parseRangeExpr(p *parser, left ast.Expr, bp bindinPower) ast.Expr {
+	p.advance()
+	return ast.RangeExpr{
+		Lower: left,
+		Upper: parseExpr(p, bp),
+	}
+}
+
+func parseMemberExpr(p *parser, left ast.Expr, bp bindinPower) ast.Expr {
+	isComputed := p.advance().Kind == lexer.OPEN_BRACKET
+	if isComputed {
+		rhs := parseExpr(p, bp)
+		p.expect(lexer.CLOSE_BRACKET)
+		return ast.ComputedExpr{
+			Member:   left,
+			Property: rhs,
+		}
+	}
+
+	return ast.MemberExpr{
+		Member:   left,
+		Property: p.expect(lexer.IDENTIFIER).Value,
+	}
+}
+
+var parseCallExpr = func(p *parser, left ast.Expr, bp bindinPower) ast.Expr {
+	p.advance()
+	arguments := make([]ast.Expr, 0)
+
+	for p.hasTokens() && p.currentTokenKind() != lexer.CLOSE_PAREN {
+		arguments = append(arguments, parseExpr(p, assignment))
+		if !p.currentToken().IsOneOfMany(lexer.EOF, lexer.CLOSE_PAREN) {
+			p.expect(lexer.COMMA)
+		}
+	}
+
+	p.expect(lexer.CLOSE_PAREN)
+	return ast.CallExpr{
+		Method:    left,
+		Arguments: arguments,
+	}
+}
+
+var parseFnExpr = func(p *parser) ast.Expr {
+	p.expect(lexer.FN)
+	functionParams, returnType, functionBody := parseFnParamsAndBody(p)
+
+	return ast.FunctionExpr{
+		Parameters: functionParams,
+		ReturnType: returnType,
+		Body:       functionBody,
 	}
 }

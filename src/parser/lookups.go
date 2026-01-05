@@ -45,6 +45,7 @@ func led(kind lexer.TokenKind, bp bindinPower, ledFn ledHandler) {
 }
 
 func nud(kind lexer.TokenKind, nudFn nudHandler) {
+	bpLu[kind] = primary
 	nudLu[kind] = nudFn
 }
 
@@ -74,9 +75,8 @@ func createTokenLookups() {
 	// Additive & Multiplicative
 	led(lexer.PLUS, additive, parseBinaryExpr)
 	led(lexer.DASH, additive, parseBinaryExpr)
-
-	led(lexer.STAR, multiplicative, parseBinaryExpr)
 	led(lexer.SLASH, multiplicative, parseBinaryExpr)
+	led(lexer.STAR, multiplicative, parseBinaryExpr)
 	led(lexer.PERCENT, multiplicative, parseBinaryExpr)
 
 	// Literals & Symbols
@@ -86,12 +86,26 @@ func createTokenLookups() {
 	nud(lexer.OPEN_PAREN, parseGroupingExpr)
 	nud(lexer.DASH, parsePrefixExpr)
 
-	// Call/Member/Arrays expressions
-	led(lexer.OPEN_CURLY, call, parseStructInstantiationExpr)
+	nud(lexer.TYPEOF, parsePrefixExpr)
+	nud(lexer.DASH, parsePrefixExpr)
+	nud(lexer.NOT, parsePrefixExpr)
 	nud(lexer.OPEN_BRACKET, parseArrayInstantiationExpr)
 
+	// Call/Member/Arrays expressions
+	led(lexer.DOT, member, parseMemberExpr)
+	led(lexer.OPEN_BRACKET, member, parseMemberExpr)
+	led(lexer.OPEN_PAREN, call, parseCallExpr)
+
 	// Grouping Expr
-	// nud(lexer.FN, default_bp, parseFnExpr)
+	nud(lexer.OPEN_PAREN, parseGroupingExpr)
+	nud(lexer.FN, parseFnExpr)
+	nud(lexer.NEW, func(p *parser) ast.Expr {
+		p.advance()
+		classInstation := parseExpr(p, default_bp)
+		return ast.NewExpr{
+			Instantiation: ast.ExpectExpr[ast.CallExpr](classInstation),
+		}
+	})
 
 	// Statements
 	stmt(lexer.OPEN_CURLY, parseBlockStmt)
