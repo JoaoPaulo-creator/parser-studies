@@ -20,14 +20,6 @@ func parseStmt(p *parser) ast.Stmt {
 	}
 }
 
-func parseExpressionStmt(p *parser) ast.ExpressionStmt {
-	expression := parseExpr(p, default_bp)
-	p.expect(lexer.SEMI_COLON)
-	return ast.ExpressionStmt{
-		Expression: expression,
-	}
-}
-
 func parseVarDeclStmt(p *parser) ast.Stmt {
 	var explicitType ast.Type
 	var assinedValue ast.Expr
